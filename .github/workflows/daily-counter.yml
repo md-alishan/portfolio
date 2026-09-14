@@ -1,0 +1,57 @@
+name: Daily portfolio counter
+
+on:
+  schedule:
+    # UTC times; Istanbul is UTC+3. Different time each weekday.
+    - cron: '17 15 * * 1' # Monday 18:17
+    - cron: '43 16 * * 2' # Tuesday 19:43
+    - cron: '11 17 * * 3' # Wednesday 20:11
+    - cron: '29 18 * * 4' # Thursday 21:29
+    - cron: '53 15 * * 5' # Friday 18:53
+    - cron: '37 17 * * 6' # Saturday 20:37
+    - cron: '7 18 * * 0'  # Sunday 21:07
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/daily-counter.yml'
+      - '.github/scripts/increment_counter.py'
+      - '.github/scripts/test_increment_counter.py'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: daily-portfolio-counter
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s .github/scripts -p 'test_*.py'
+
+  increment:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Increase the saved HTML counter
+        run: python3 .github/scripts/increment_counter.py
+      - name: Commit and push the counter
+        run: |
+          if git diff --quiet -- index.html; then
+            exit 0
+          fi
+          git diff --check
+          git config user.name 'mo'
+          git config user.email 'm.demir.0304@gmail.com'
+          git add -- index.html
+          git commit -m "Increment daily portfolio counter"
+          git push origin HEAD:main
