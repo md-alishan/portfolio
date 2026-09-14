@@ -20,7 +20,17 @@
     More stuff to do
     
   </div>
+  <div style="margin-top:20px;display:flex;align-items:center;gap:12px;">
+    <p style="margin:0;color:#0f172a;">Counter: <output id="counter" aria-live="polite">1</output></p>
+    <button type="button" id="increment-counter" style="padding:8px 16px;border:0;border-radius:6px;background:#0f172a;color:#fff;cursor:pointer;">+1</button>
+  </div>
 </section>
+<script>
+  const counter = document.getElementById('counter');
+  document.getElementById('increment-counter').addEventListener('click', () => {
+    counter.value = String(Number(counter.value) + 1);
+  });
+</script>
 
 </body>
 </html>
