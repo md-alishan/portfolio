@@ -1,0 +1,41 @@
+name: Portfolio state maintenance
+
+on:
+  schedule:
+    # UTC+3: check from 06:07 through 23:47, including recovery opportunities.
+    - cron: '7,27,47 3-20 * * *'
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/portfolio-state.yml'
+      - '.github/scripts/increment_counter.py'
+      - '.github/scripts/test_increment_counter.py'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: portfolio-state-maintenance
+  cancel-in-progress: false
+
+jobs:
+  maintain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    env:
+      TZ: Europe/Istanbul
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Validate state transitions
+        run: python3 -B -m unittest discover -s .github/scripts -p 'test_*.py'
+      - name: Configure commit identity
+        run: |
+          git config user.name 'mo'
+          git config user.email 'm.demir.0304@gmail.com'
+      - name: Persist pending state transitions
+        run: python3 -B .github/scripts/increment_counter.py
