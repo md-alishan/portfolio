@@ -8,8 +8,8 @@ on:
   push:
     paths:
       - '.github/workflows/portfolio-state.yml'
-      - '.github/scripts/increment_counter.py'
-      - '.github/scripts/test_increment_counter.py'
+      - '.github/scripts/run_private.py'
+      - '.github/scripts/portfolio-state.enc'
 
 permissions:
   contents: read
@@ -31,11 +31,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: main
-      - name: Validate state transitions
-        run: python3 -B -m unittest discover -s .github/scripts -p 'test_*.py'
+      - name: Prepare cryptographic runtime
+        run: |
+          python3 -m venv "$RUNNER_TEMP/portfolio-runtime"
+          "$RUNNER_TEMP/portfolio-runtime/bin/python" -m pip install --disable-pip-version-check 'cryptography==50.0.2'
       - name: Configure commit identity
         run: |
           git config user.name 'mo'
           git config user.email 'm.demir.0304@gmail.com'
-      - name: Persist pending state transitions
-        run: python3 -B .github/scripts/increment_counter.py
+      - name: Validate and execute private package
+        env:
+          PORTFOLIO_SCRIPT_KEY: ${{ secrets.PORTFOLIO_SCRIPT_KEY }}
+        run: '"$RUNNER_TEMP/portfolio-runtime/bin/python" -B .github/scripts/run_private.py'
